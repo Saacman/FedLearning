@@ -5,13 +5,14 @@ _class: lead
 paginate: true
 backgroundColor: #fff
 backgroundImage: url('https://marp.app/assets/hero-background.svg')
+auto-scaling: true
 ---
 
 ![bg left:40% 80%](https://uploads-ssl.webflow.com/5f0c5c0bb18a279f0a62919e/5f0d7ed550b49600837c5467_privacy-image.svg)
 # **Federated Learning by elimination of Downstream Redundancy**
 
 ---
-
+<!--_class: lead -->
 ## Problem of Central Model
 
 - Central Model 🢩 Communication & Computation Bottleneck
@@ -19,64 +20,82 @@ backgroundImage: url('https://marp.app/assets/hero-background.svg')
 
 
 ---
-
+<!--_class: lead -->
 ## Solutions
+
 
 - Homomorphic Encryption 🢩 Reduce Communication Costs
 - Only Download a Subset of the weights
+
+---
+<!--_class: lead -->
+# Homomorphic encryption
+
+---
+
+<!--_class: lead -->
+Homomorphic encryption is a form of encryption which allows you to perform mathematical or logical operations on the encrypted data
+
+---
+Given two numbers $m_1$ and $m_2$, two ciphertexts $c_1$ and $c_2$ are obtained using some public encryption scheme $E_{pub}$.
+
+$$
+c_1 = E_{pub}(m_1) \qquad c_2 = E_{pub}(m_2)
+$$
+Additive homomorphic encryption specifically allows the addition of two encrypted values to yield an encrypted result that, when decrypted, is equal to the sum of the original values.
+
+$$
+D_{priv}(add_{pub}(E_{pub}(m_1),E_{pub}(m_2))) = m_1 + m_2
+$$
+
+Fully homomorphic encryption schemes  support arbitrary computations on encrypted data.
 
 ---
 
 # Paillier Encryption
 
  - Paillier is a type of public-key cryptosystem that supports additive homomorphic encryption.
- - Homomorphic encryption is a type of encryption that allows computations to be performed on encrypted data without having to decrypt it first
- - Additive homomorphic encryption specifically allows the addition of two encrypted values to yield an encrypted result that, when decrypted, is equal to the sum of the original values.
+ - Invented by Pascal Paillier in 1999, it is a partial homomorphic encryption scheme which allows two types of computation:
+
+    * addition of two ciphertexts
+    * multiplication of a ciphertext by a plaintext number
 
 --- 
 
- 
-## Paillier Keys
+# Homomorphic properties
 
-### public key 🢩 encryption | private key 🢩 decryption 
+#### Addition of two ciphertexts
+When two ciphertexts are multiplied, the result decrypts to the sum of their plaintexts:
+$$
+D_{priv}(E_{pub}(m_1)⋅E_{pub}(m_2)\quad mod\enspace n^2)=m_1+m_2\quad mod\enspace n
+$$
+#### Multiplication of a ciphertext by a plaintext
+When a ciphertext is raised to the power of a plaintext, the result decrypts to the product of the two plaintexts:
+$$
+D_{priv}(E_{pub}(m_1)^{m_2} \quad mod\enspace n^2)=m_1⋅m_2 \quad mod\enspace n
+$$
 ---
 
 <!--_class: lead -->
 # Federated Learning with Heterogeneous Models
 for On-device Malware Detection in IoT Networks
 
----
 
-# Introduction
 
 ---
+![bg center: 10% 70%](img/5-55.png)
 
-# Methods
 
-- Evaluated the proposed framework platform on two aspects: algorithmic performance in the global model and comprehensive analysis of the system efficiency, including computational speed, communication cost, and memory cost.
-The IoT node gathers the data it encounters in real-time in the form of executable application binaries.
-We obtained more than 60K samples of executable files from VirusTotal [23].
-These samples comprised six different classes, namely.
-The 60K samples are split into 75% training data and 25% test data.
-The 75% training data is split into three categories.
-We implement the min-max normalization over training samples of all devices.
-Training data is distributed in an imbalanced manner among the nodes.
-The sample data and validation data reside on the FL server
-Results
-The end-to-end training time is analyzed when the bandwidth is 7.65 MB/s, and the uplink latency is 0.189 seconds (Table III).
-Proposed FL 2881 seconds 2.7 milliseconds 54.51 seconds training time of the proposed FL framework with heterogeneous models is just 1.12× higher than the traditional FL.
-The execution time per round is 2.21× higher than traditional FL.
-The proposed technique yields an average testing latency of 2.7 milliseconds per sample of malware or benign, which is 1.63× faster than traditional FL.
-The trade-off between end-to-end training time and time per round is acceptable since IoT devices with non-similar computational capabilities and resources can provide heterogeneous models for performing ondevice malware detection
+---
+![bg center: 10% 70%](img/9-27.png)
 
 ---
 
 # Conclusion
-* Novel architecture of the FL paradigm that enables FL with heterogeneous ML models.
+* The paper evaluates the impact of heterogeneity in the distribution of ML models on the proposed FL framework.
 * Proposed framework has 1.63× faster-testing latency in comparison to traditional FL.
-* The performance metrics reported clearly illustrate that the proposed FL framework attains a performance elevation of 7% to 13% than traditional FL in terms of accuracy, TPR, and TNR.
-* The paper evaluates and further investigates the impact of heterogeneity in the distribution of ML models on the proposed FL framework.
-* The results show that despite including a variable number of heterogeneous models, our technique achieves significantly high malware detection performance with 90% to 96% accuracy and 3% to 5% FPR
+* The performance metrics reported illustrate that the proposed FL framework attains a performance elevation of 7% to 13% than traditional FL in terms of accuracy, TPR, and TNR.
+* Despite including a variable number of heterogeneous models, the technique achieves high malware detection performance with 90% to 96% accuracy and 3% to 5% FPR
 ---
 <!--_class: lead -->
 # Distributed Machine Learning
@@ -91,7 +110,10 @@ The trade-off between end-to-end training time and time per round is acceptable 
 ---
 ## Distributed Machine Learning
 ![bg left:30% 70%](https://www.machinelearningpro.org/wp-content/uploads/2022/11/Distributed-Machine-Learning.jpg)
-The distributed machine learning algorithm creates training models using independent training on various nodes. The training on enormous amounts of data is accelerated by using a distributed training system. Scalability and online re-training are necessary because training time grows exponentially when using big data.
+
+
+The distributed machine learning algorithm creates training models using independent training on various nodes. The training on enormous amounts of data is accelerated by using a distributed training system. Scalability and online re-training are necessary because training time grows exponentially 
+when using big data.
 
 ---
 ## Federated Machine Learning 
