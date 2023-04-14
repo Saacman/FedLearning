@@ -35,7 +35,7 @@ def client_update(  client_model : torch.nn.Module,
 
 if __name__ == '__main__':
     # Socket instantiation
-    
+
     HOST = 'localhost'
     PORT = 50009
     socketClient = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     # Here we must receive the model from the server
     #global_model.to(device)
-
+    # Maybe check first with just one client????
     for model in client_models:
         model.to(device)
         #model.load_state_dict(global_model.state_dict())
@@ -59,7 +59,8 @@ if __name__ == '__main__':
             packet = socketClient.recv(4096)
             if not packet: break
             data.append(packet)
-        
+            print(f"Receiving ... [{len(data)}]")
+        print("Data received succesfully!")
         gstate = pickle.loads(b"".join(data))
         socketClient.close()
         print ('Received', repr(gstate))
@@ -67,4 +68,4 @@ if __name__ == '__main__':
 
     criterion = nn.CrossEntropyLoss() # computes the cross-entropy loss between the predicted and true labels
     optimizers =[optim.Adam(model.parameters(), lr=0.001) for model in client_models]
-    
+

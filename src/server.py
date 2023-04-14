@@ -16,7 +16,7 @@ def server_aggregate(global_model : torch.nn.Module, client_models):
     for key in global_dict.keys():
         global_dict[key] = torch.stack([client_models[i].state_dict()[key].float() for i in range(len(client_models))],0).mean(0)
     global_model.load_state_dict(global_dict)
-    
+
     # Update the client models using the global model
     for model in client_models:
         model.load_state_dict(global_model.state_dict())
@@ -36,11 +36,21 @@ if __name__ == '__main__':
     global_model.to(device)
     conn, addr = socketServer.accept()
     print ('Connected by', addr)
-    while 1:
+    while True:
+        data = conn.recv(4096)
+        print(pickle.loads(data))
+        print(not data)
+        if not data:
+            print(not data)
+            break
+
+    current_state = pickle.dumps(global_model.state_dict())
+    print(len(current_state))
+    print("Sending model")
+    conn.send(current_state)
+    print("Data sent")
+    while True:
         data = conn.recv(4096)
         print(pickle.loads(data))
         if not data: break
-        current_state = pickle.dumps(global_model.state_dict())
-        print(len(current_state))
-        conn.send(current_state)
     conn.close()

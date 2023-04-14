@@ -1,0 +1,86 @@
+import socket
+import threading
+import pickle
+import select
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from model import MLP
+
+HOST = 'localhost' # The server's hostname or IP address
+PORT = 65432 # The port used by the server
+
+# def handle_client(conn, addr):
+#     with conn:
+#         print('Connected by', addr)
+#         while True:
+#             data = conn.recv(1024)
+#             if not data:
+#                 break
+#             obj = pickle.loads(data)
+#             # Do something with obj
+#             print(obj)
+#             response = {'status': 'OK'}
+#             conn.sendall(pickle.dumps(response))
+
+# with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+#     s.bind((HOST, PORT))
+#     s.listen()
+
+#     while True:
+#         conn, addr = s.accept()
+#         thread = threading.Thread(target=handle_client, args=(conn, addr))
+#         thread.start()
+
+
+
+class Server:
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.bind((self.host, self.port))
+        self.sock.listen(1)
+        self.sock.setblocking(0)
+        print(f"Listening on {self.host}:{self.port}")
+
+        self.model = torch.nn.Linear(10, 1)
+        self.state_dict = self.model.state_dict()
+
+    def handle_client(self, conn, addr):
+        with conn:
+            print('Connected by', addr)
+            while True:
+                data = conn.recv(1024)
+                if not data:
+                    break
+                obj = pickle.loads(data)
+                # Do something with obj
+                print(obj)
+
+                state_dict = self.model.state_dict()
+                response = {'status': 'OK'}
+                packed = pickle.dumps(state_dict)
+                conn.sendall(packed)
+        print(f"Connection closed")
+        
+
+    def start(self):
+        while True:
+            # Wait for a new client connection
+            conn, addr = self.sock.accept()
+
+            # Start a new thread to handle the client
+            client_thread = threading.Thread(target=self.handle_client, args=(conn, addr))
+            client_thread.start()
+
+    def stop(self):
+        self.sock.close()
+    
+    def __exit__(self):
+        self.stop()
+
+if __name__ == '__main__':
+    # Create a server instance and start it
+    server = Server(HOST, PORT)
+    server.start()
