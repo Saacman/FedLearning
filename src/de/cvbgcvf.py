@@ -28,30 +28,6 @@ class ModelServer:
             conn.close()
             print(f"Connection from {addr} closed.")
 
-class ModelClient:
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    def connect(self):
-        self.sock.connect((self.host, self.port))
-
-    def get_state_dict(self):
-        # Receive the pickled state_dict from the server
-        packed_state_dict = b''
-        while True:
-            chunk = self.sock.recv(1024)
-            if not chunk:
-                break
-            packed_state_dict += chunk
-
-        # Unpickle the state_dict and return it
-        state_dict = pickle.loads(packed_state_dict)
-        return state_dict
-
-    def close(self):
-        self.sock.close()
 
 import torch.nn as nn
 
@@ -64,8 +40,3 @@ model = nn.Sequential(
 
 server = ModelServer('localhost', 8000, model)
 server.start()
-client = ModelClient('localhost', 8000)
-client.connect()
-state_dict = client.get_state_dict()
-print(state_dict)
-client.close()

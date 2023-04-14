@@ -4,7 +4,7 @@ import torch
 import select 
 
 HOST = 'localhost' # The server's hostname or IP address
-PORT = 65432 # The port used by the server
+PORT = 65433 # The port used by the server
 
 data = {'name': 'Alice', 'age': 25}
 
@@ -40,21 +40,16 @@ class Client:
 
         # Receive response from server
         response = []
-        chunk_len = 128
+        chunk_len = 1024
         while True:
-            # try:
-            #     chunk = self.sock.recv(1024)
-            #     if not chunk:
-            #         break
-            #     response += chunk
-            # except socket.timeout:
-            #     print("Timeout occurred while receiving data from the server.")
+            # chunk = self.sock.recv(chunk_len)
+            # response.append(chunk)
+            # if len(chunk) < chunk_len:
             #     break
-
             chunk = self.sock.recv(chunk_len)
-            response.append(chunk)
-            if len(chunk) < chunk_len:
+            if not chunk:
                 break
+            response.append(chunk)
 
 
         # Deserialize response

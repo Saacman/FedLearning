@@ -8,10 +8,10 @@ import torch.optim as optim
 from model import MLP
 
 HOST = 'localhost' # The server's hostname or IP address
-PORT = 65432 # The port used by the server
+PORT = 65433 # The port used by the server
 
 class Server:
-    def __init__(self, host, port):
+    def __init__(self, host, port, model):
         self.host = host
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -19,32 +19,28 @@ class Server:
         self.sock.listen(1)
         print(f"Listening on {self.host}:{self.port}")
 
-        self.model = torch.nn.Linear(10, 1)
-        self.state_dict = self.model.state_dict()
+        self.model = model
 
     def handle_client(self, conn, addr):
+        print('Connected by', addr)
         with conn:
-            i = 0
-            print('Connected by', addr)
-            while True:
-                print(i)
-                i += 1
-                data = conn.recv(1024)
-                if not data:
-                    break
-                obj = pickle.loads(data)
-                # Do something with obj
-                print(obj)
+            #while True:
+            data = conn.recv(1024)
+            # if not data:
+            #     break
+            obj = pickle.loads(data)
+            
+            # If client is uunit, send the global model
+            print(obj)
 
-                state_dict = self.model.state_dict()
-                print(state_dict)
-                response = {'status': 'OK'}
-                packed = pickle.dumps(state_dict)
-                print(len(packed))
-                a = conn.sendall(packed)
-                print(a)
+            state_dict = self.model.state_dict()
+            print(state_dict)
+            packed = pickle.dumps(state_dict)
+
+            conn.sendall(packed)
 
         print(f"Connection closed")
+
         
 
     def start(self):
