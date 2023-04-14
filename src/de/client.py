@@ -31,7 +31,7 @@ class Client:
             print(str(e), "hola")
 
     def send(self, data):
-        self.sock.settimeout(2)
+        #self.sock.settimeout(2)
         # Serialize data
         packed = pickle.dumps(data)
 
@@ -39,19 +39,26 @@ class Client:
         self.sock.sendall(packed)
 
         # Receive response from server
-        response = b''
+        response = []
+        chunk_len = 128
         while True:
-            try:
-                chunk = self.sock.recv(1024)
-                if not chunk:
-                    break
-                response += chunk
-            except socket.timeout:
-                print("Timeout occurred while receiving data from the server.")
+            # try:
+            #     chunk = self.sock.recv(1024)
+            #     if not chunk:
+            #         break
+            #     response += chunk
+            # except socket.timeout:
+            #     print("Timeout occurred while receiving data from the server.")
+            #     break
+
+            chunk = self.sock.recv(chunk_len)
+            response.append(chunk)
+            if len(chunk) < chunk_len:
                 break
 
+
         # Deserialize response
-        return pickle.loads(response)
+        return pickle.loads(b"".join(response))
     
     def close(self):
         self.sock.close()

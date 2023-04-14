@@ -10,30 +10,6 @@ from model import MLP
 HOST = 'localhost' # The server's hostname or IP address
 PORT = 65432 # The port used by the server
 
-# def handle_client(conn, addr):
-#     with conn:
-#         print('Connected by', addr)
-#         while True:
-#             data = conn.recv(1024)
-#             if not data:
-#                 break
-#             obj = pickle.loads(data)
-#             # Do something with obj
-#             print(obj)
-#             response = {'status': 'OK'}
-#             conn.sendall(pickle.dumps(response))
-
-# with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-#     s.bind((HOST, PORT))
-#     s.listen()
-
-#     while True:
-#         conn, addr = s.accept()
-#         thread = threading.Thread(target=handle_client, args=(conn, addr))
-#         thread.start()
-
-
-
 class Server:
     def __init__(self, host, port):
         self.host = host
@@ -67,7 +43,7 @@ class Server:
                 print(len(packed))
                 a = conn.sendall(packed)
                 print(a)
-                
+
         print(f"Connection closed")
         
 
