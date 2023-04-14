@@ -1,7 +1,7 @@
 import socket
 import threading
 import pickle
-import select
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -41,7 +41,6 @@ class Server:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.bind((self.host, self.port))
         self.sock.listen(1)
-        self.sock.setblocking(0)
         print(f"Listening on {self.host}:{self.port}")
 
         self.model = torch.nn.Linear(10, 1)
@@ -49,8 +48,11 @@ class Server:
 
     def handle_client(self, conn, addr):
         with conn:
+            i = 0
             print('Connected by', addr)
             while True:
+                print(i)
+                i += 1
                 data = conn.recv(1024)
                 if not data:
                     break
@@ -59,9 +61,13 @@ class Server:
                 print(obj)
 
                 state_dict = self.model.state_dict()
+                print(state_dict)
                 response = {'status': 'OK'}
                 packed = pickle.dumps(state_dict)
-                conn.sendall(packed)
+                print(len(packed))
+                a = conn.sendall(packed)
+                print(a)
+                
         print(f"Connection closed")
         
 

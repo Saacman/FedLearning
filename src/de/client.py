@@ -1,6 +1,7 @@
 import socket
 import pickle
 import torch
+import select 
 
 HOST = 'localhost' # The server's hostname or IP address
 PORT = 65432 # The port used by the server
@@ -20,36 +21,40 @@ class Client:
     def __init__(self, host, port) -> None:
         self.host = host
         self.port = port
-        self.sckt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #self.sock.setblocking(0)
 
     def connect(self):
         try:
-            self.sckt.connect((self.host, self.port))
+            self.sock.connect((self.host, self.port))
         except socket.error as e:
-            print(str(e))
-            
+            print(str(e), "hola")
+
     def send(self, data):
+        self.sock.settimeout(2)
         # Serialize data
         packed = pickle.dumps(data)
 
         # Send data to server
-        self.sckt.sendall(packed)
+        self.sock.sendall(packed)
 
         # Receive response from server
-        #response = self.sckt.recv(1024)
         response = b''
         while True:
-            print(len(response))
-            chunk = self.sckt.recv(1024)
-            if not chunk:
+            try:
+                chunk = self.sock.recv(1024)
+                if not chunk:
+                    break
+                response += chunk
+            except socket.timeout:
+                print("Timeout occurred while receiving data from the server.")
                 break
-            response += chunk
 
         # Deserialize response
         return pickle.loads(response)
     
     def close(self):
-        self.sckt.close()
+        self.sock.close()
     
     def __exit__(self):
         self.close()
@@ -60,7 +65,7 @@ if __name__ == '__main__':
     client.connect()
 
     # Send data to server and receive response
-    data = {'message': 'Hello, server!'}
+    data = {'status': 'uinit'}
     response = client.send(data)
 
     # Print response
