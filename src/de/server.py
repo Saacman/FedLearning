@@ -10,6 +10,14 @@ from model import MLP
 HOST = 'localhost' # The server's hostname or IP address
 PORT = 65433 # The port used by the server
 
+epoch = 5
+comm_cycles = 25
+num_clients = 10
+sample_size = int(.3 * num_clients) # Use 30% of available clients
+net_parameters = [ 28 * 28, # input
+                512, 256, 128, 64,
+                10 ] #output
+
 class Server:
     def __init__(self, host, port, model):
         self.host = host
@@ -21,6 +29,7 @@ class Server:
 
         self.model = model
 
+
     def handle_client(self, conn, addr):
         print('Connected by', addr)
         with conn:
@@ -31,12 +40,10 @@ class Server:
             obj = pickle.loads(data)
             
             # If client is uunit, send the global model
-            print(obj)
-
-            state_dict = self.model.state_dict()
-            print(state_dict)
-            packed = pickle.dumps(state_dict)
-
+            if obj['status'] == 'uinit':
+                packed = pickle.dumps(self.model.state_dict())
+            elif obj['status'] == 'submt':
+                packed = pickle.dumps({'status': 'ready'})
             conn.sendall(packed)
 
         print(f"Connection closed")
@@ -59,6 +66,11 @@ class Server:
         self.stop()
 
 if __name__ == '__main__':
+    # Global Model instantiation
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    global_model = MLP(net_parameters)
+    global_model.to(device)
+
     # Create a server instance and start it
-    server = Server(HOST, PORT)
+    server = Server(HOST, PORT, global_model)
     server.start()
