@@ -76,59 +76,45 @@ class Paillier:
         
         return True
     
-    def gcd(self, a, b):
-        while b != 0:
-            a, b = b, a % b
-        return a
+    # def gcd(self, a, b):
+    #     while b != 0:
+    #         a, b = b, a % b
+    #     return a
+    
+    def egcd(self, a, b):
+        """
+        Extended Euclidean algorith, computes the greatest common diviser and the 
+        coefficients of Bezout's identity.
+        Source: https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
+        
+        :param a: a value
+        :param b: b value
+        :return: greatest common divisor and coefficients of Bezout's identity
+        """
+        if a == 0:
+            return (b, 0, 1)
+        else:
+            g, y, x = self.egcd(b % a, a)
+            return (g, x - (b // a) * y, y)
     
     def lcm(self, a, b):
         return a * b // self.gcd(a, b)
     
     def mod_inv(self, a, m):
-        # Compute the modular inverse of a mod m using the extended Euclidean algorithm
-        if self.gcd(a, m) != 1:
-            raise ValueError("a is not invertible modulo m")
+        """
+        Calculates the multiplicative inverse of a in modulo p
+        Source: http://code.activestate.com/recipes/576737-inverse-modulo-p/)
+        :param a: a value
+        :param m: modulo
+        :return: b, such that (a * b) % m = 1 
+        """
+        # if self.gcd(a, m) != 1:
+        #     raise ValueError("a is not invertible modulo m")
         
-        x, y, u, v = 
-
-class PaillierE:
-
-    def __init__(self, p=None, q=None, n=None, g=None, l=None, mu=None):
-        if p and q:
-            self.p = p
-            self.q = q
-            self.n = p * q
-            self.g = self.n + 1
-            self.l = (self.p - 1) * (self.q - 1)
-            self.mu = self._calculate_mu()
-        elif n and g:
-            self.n = n
-            self.g = g
-            self.l = None
-            self.mu = None
+        #x, y, u, v = 
+        g, x, y = self.egcd(a, m)
+        if g != 1:
+            raise Exception('modular inverse does not exist')
         else:
-            raise ValueError("Invalid parameters provided.")
-
-    def _calculate_mu(self):
-        return mod_inverse(self.l, self.n)
-
-    def _generate_keys(self, key_length):
-        self.p, self.q = generate_prime_pair(key_length)
-        self.n = self.p * self.q
-        self.g = self.n + 1
-        self.l = (self.p - 1) * (self.q - 1)
-        self.mu = self._calculate_mu()
-
-    def encrypt(self, plaintext):
-        if plaintext < 0 or plaintext >= self.n:
-            raise ValueError("Plaintext must be between 0 and n-1")
-        r = random.randint(1, self.n)
-        c = pow(self.g, plaintext, self.n ** 2) * pow(r, self.n, self.n ** 2) % (self.n ** 2)
-        return c
-
-    def decrypt(self, ciphertext):
-        if not self.l or not self.mu:
-            raise ValueError("Cannot decrypt without private key")
-        c = pow(ciphertext, self.l, self.n ** 2)
-        plaintext = ((c - 1) // self.n * self.mu) % self.n
-        return plaintext
+            return x % m
+        

@@ -155,3 +155,38 @@ Federated learning utilizes methods from numerous fields of study, including dis
 - [Federated Learning (PyTorch)](https://www.kaggle.com/code/puru98/federated-learning-pytorch)
 - [Federated-Learning (PyTorch)](https://github.com/AshwinRJ/Federated-Learning-PyTorch)
 - [Federated Learning](https://github.com/shaoxiongji/federated-learning)
+
+
+--- 
+
+# Encryption Schemes
+
+---
+
+# Paper 1
+
+- Clients holds a private key
+- Server collects Public keys
+- Client decrypts model for training
+- Client encrypts weights for update
+- Server operates on weights to average
+
+---
+
+# Medical Fed Lern
+
+- Server holds a private key
+- Hospital clients are given the public key
+
+
+# Steps:
+
+- Hospital 1 computes its gradient & encrypts it
+- Hospital 2 receives it, cumputes its gradient and sums it to Hospital 1
+- hospital 3 does the same and passes the overall sum to the
+server. 
+- The server obtains the gradient of the whole (virtual) training set;
+decrypts it and sends the gradient back to every client.
+- The clients then update their respective local models.
+
+---
