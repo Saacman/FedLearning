@@ -158,7 +158,7 @@ Federated learning utilizes methods from numerous fields of study, including dis
 
 
 --- 
-
+<!--_class: lead -->
 # Encryption Schemes
 
 ---

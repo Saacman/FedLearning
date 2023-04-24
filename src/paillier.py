@@ -17,7 +17,7 @@ class Paillier:
         # Generate a random number g that is relatively prime to n^2
         while True:
             g = random.randint(1, n**2)
-            if self.gcd(g, n**2) == 1:
+            if self.egcd(g, n**2)[0] == 1:
                 break
         
         # Compute the public key (n, g) and the private key (lambda)
@@ -29,7 +29,7 @@ class Paillier:
         n, g = self.public_key
         while True:
             r = random.randint(1, n-1)
-            if self.gcd(r, n) == 1:
+            if self.egcd(r, n)[0] == 1:
                 break
         
         # Compute the ciphertext c = g^m * r^n mod n^2
@@ -98,7 +98,7 @@ class Paillier:
             return (g, x - (b // a) * y, y)
     
     def lcm(self, a, b):
-        return a * b // self.gcd(a, b)
+        return a * b // self.egcd(a, b)[0]
     
     def mod_inv(self, a, m):
         """
@@ -118,3 +118,6 @@ class Paillier:
         else:
             return x % m
         
+
+if __name__ == '__main__':
+    print("Hola")
