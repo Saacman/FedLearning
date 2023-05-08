@@ -31,7 +31,8 @@ def lcm(a, b):
 
 def lfxn(x, n):
     """
-    L function such that L(x) = (x-1)/n. The result of function L must be always an integer.
+    L function such that L(x) = (x-1)/n. The result
+    must always be an integer.
     :return int: (x - 1) / m
     """
     y = (x - 1)/n
