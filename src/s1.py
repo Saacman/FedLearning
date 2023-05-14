@@ -45,7 +45,9 @@ class Server:
             while len(client_model_bytes) < size:
                 client_model_bytes += conn.recv(4096)
             client_model = torch.deserialize(client_model_bytes)
+
             self.lock.acquire()
+            # Model Aggregation, not how it works
             self.global_model += client_model
             self.lock.release()
             print('Client model aggregated')
@@ -53,6 +55,7 @@ class Server:
             print('Error handling client')
         finally:
             conn.close()
+            
 if __name__ == '__main__':
     server = Server()
     server.start()
