@@ -1,6 +1,6 @@
 import math
 import random
-
+import pickle
 
 def gcd(a, b):
     """
@@ -119,3 +119,35 @@ def primes_list(n: int):
             for i in range(p, n+1, p):
                 sieve[i] = False
     return out
+
+
+def send_pckld_bytes(sockt, msg):
+    """
+    Function to send & unload pickle bytes
+    """
+    # Dump the msg to pickle bytes
+    msg_bytes = pickle.dumps(msg)
+    # Get the size of the msg bytes
+    size_bytes = len(msg_bytes).to_bytes(4, byteorder='big')
+
+    # Send the size first (4bits) and the pickled bytes
+    sockt.sendall(size_bytes)
+    sockt.sendall(msg_bytes)
+
+
+def recv_pckld_bytes(sockt):
+    """
+    Function to receive & unload pickle bytes
+    """
+    # Receive the size bytes
+    size_bytes = b''
+    while len(size_bytes) < 4:
+        size_bytes += sockt.recv(4 - len(size_bytes))
+    size = int.from_bytes(size_bytes, byteorder='big')
+    # Receive msg from server
+    msg_bytes = b''
+    while len(msg_bytes) < size:
+        msg_bytes += sockt.recv(4096)
+
+    recvd_msg = pickle.loads(msg_bytes)
+    return recvd_msg

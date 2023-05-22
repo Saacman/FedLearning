@@ -3,6 +3,7 @@ import threading
 import torch
 import pickle 
 import models
+import utils as u
 
 HOST = '127.0.0.1'  # Server IP address
 PORT = 65432  # Port to listen on
@@ -18,52 +19,41 @@ class Server:
         self.global_model = models.MLP(net_parameters)  # initialize local model
         self.clients = []
         self.clients_dict = []
-        self.lock = threading.Lock()
+        self.lock_clients = threading.Lock()
+        self.lock_aggregate = threading.Lock()
         self.round = 0
 
     def start(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, PORT))
             s.listen()
-            print(f'Server listening on {HOST}:{PORT}')
+            print(f'[INFO] Server listening on {HOST}:{PORT}')
             while self.round < fl_rounds:
                 conn, addr = s.accept()
-                print(f'Client {addr} connected')
+                print(f'[INFO] Client {addr} connected')
                 self.clients.append(conn)
                 threading.Thread(target=self.handle_client, args=(conn,)).start()
-                # TODO: better check if this is correct with threads
-                if len(self.clients_dict) >= num_clients:
-                    self.server_aggregate()
-                    self.round += 1
+                with self.lock_aggregate:
+                    if len(self.clients_dict) >= num_clients:
+                        self.server_aggregate()
+                        self.round += 1
 
     def handle_client(self, conn):
         try:
-            global_model_bytes = pickle.dumps(self.global_model.state_dict())
-            # Send size of global model first to handle truncated data
-            size_bytes = len(global_model_bytes).to_bytes(4, byteorder='big')
-            conn.sendall(size_bytes)
-            conn.sendall(global_model_bytes)
-            print('Global model sent to client')
+            # Initialize client
+            # TODO: Id client first, then decide if initialization is needed to save time
+            u.send_pckld_bytes(conn, self.global_model.state_dict())
+            print('[INFO] Global model sent to client')
             
-            # Receive and aggregate client models
-            size_bytes = b''
-            while len(size_bytes) < 4:
-                size_bytes += conn.recv(4 - len(size_bytes))
-            size = int.from_bytes(size_bytes, byteorder='big')
+            # --Receive and aggregate client models--
+            client_model_dict = u.recv_pckld_bytes(conn)
+            print('[INFO] Client model received & deserialized') 
 
-            client_model_bytes = b''
-            while len(client_model_bytes) < size:
-                client_model_bytes += conn.recv(4096)
-
-            client_model_dict = pickle.loads(client_model_bytes)
-            print('Client model received & deserialized') 
-
-            self.lock.acquire()
-            self.clients_dict.append(client_model_dict)
-            self.lock.release()
-            print('Client model saved')
+            with self.lock_clients:
+                self.clients_dict.append(client_model_dict)
+                print('[INFO] Client model saved')
         except Exception as error:
-            print('Error handling client')
+            print('[ERROR] Error handling client')
             print(error)
         finally:
             conn.close()
@@ -78,4 +68,4 @@ class Server:
 if __name__ == '__main__':
     server = Server()
     server.start()
-    print("Finished training, testing")
+    print("[INFO] Finished training, testing")
