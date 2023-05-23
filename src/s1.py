@@ -62,6 +62,7 @@ class Server:
 
         global_dict = self.global_model.state_dict() # Get a copy of the global model state_dict
         for key in global_dict.keys():
+            # TODO: Fix indexes
             global_dict[key] = torch.stack([self.clients_dict[i][key].float() for i in range(len(self.clients))],0).mean(0)
         self.global_model.load_state_dict(global_dict)
         
