@@ -20,9 +20,7 @@ class Paillier:
 
         # Key Generation
         g = random.randint(1, n**2)
-        #lmda = lcm(p-1, q-1)
-        #print(int(lmda))
-        lmda = math.lcm(p-1, q-1)
+        lmda = lcm(p-1, q-1)
         self.mu = powmod(lfxn(powmod(g, lmda, n**2), n), -1, n)
         
         
@@ -43,14 +41,6 @@ class Paillier:
         return c
     
     def decrypt(self, c):
-        # # Compute the plaintext m = L(c^lambda mod n^2) / L(g^lambda mod n^2) mod n
-        # n, g = self.public_key
-        # lmda = self.private_key
-        # m = (lfxn(powmod(c, lmda, n ** 2), n) * self.mu) % n
-        # #m = (lfxn(c^lmda % n^2,n) / lfxn(g^lmda % n^2,n)) % n
-
-        # return m
-    
         # Compute the plaintext m = L(c^lambda mod n^2) / L(g^lambda mod n^2) mod n
         n, g = self.public_key
         l = self.private_key

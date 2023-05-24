@@ -27,7 +27,7 @@ def lcm(a, b):
     """
     Outputs the least common multiple of a and b
     """
-    return (a * b) / gcd(a, b)
+    return (a * b) // gcd(a, b)
 
 def lfxn(x, n):
     """
