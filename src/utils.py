@@ -1,6 +1,8 @@
 import math
 import random
 import pickle
+import torch
+import os
 
 def gcd(a, b):
     """
@@ -151,3 +153,8 @@ def recv_pckld_bytes(sockt):
 
     recvd_msg = pickle.loads(msg_bytes)
     return recvd_msg
+
+def print_model_size(mdl):
+    torch.save(mdl.state_dict(), "tmp.pt")
+    print("%.2f MB" %(os.path.getsize("tmp.pt")/1e6))
+    os.remove('tmp.pt')
