@@ -42,18 +42,29 @@ model.eval()
 # Otherwise the quantization will not work correctly.
 fused_model.eval()
 
-# Fuse the model in place rather manually.
+#Fuse the model in place rather manually.
+# fused_model = torch.quantization.fuse_modules(fused_model, [["conv1", "bn1", "relu"]], inplace=True)
+# for module_name, module in fused_model.named_children():
+#     print(module_name)
+#     if "layer" in module_name:
+#         for basic_block_name, basic_block in module.named_children():
+#             print(f"\t{basic_block_name}")
+#             torch.quantization.fuse_modules(basic_block, [["conv1", "bn1", "relu"], ["conv2", "bn2"]], inplace=True)
+#             for sub_block_name, sub_block in basic_block.named_children():
+#                 print(f"\t\t{sub_block_name}")
+#                 if sub_block_name == "shortcut":
+#                     torch.quantization.fuse_modules(sub_block, [[0, 1]], inplace=True)
+
+# Fuse the layers in the model
 fused_model = torch.quantization.fuse_modules(fused_model, [["conv1", "bn1", "relu"]], inplace=True)
-for module_name, module in fused_model.named_children():
-    print(module_name)
+for module_name, module in model.named_children():
     if "layer" in module_name:
         for basic_block_name, basic_block in module.named_children():
-            print(f"\t{basic_block_name}")
-            torch.quantization.fuse_modules(basic_block, [["conv1", "bn1", "relu"], ["conv2", "bn2"]], inplace=True)
-            for sub_block_name, sub_block in basic_block.named_children():
-                print(f"\t\t{sub_block_name}")
-                if sub_block_name == "shortcut":
-                    torch.quantization.fuse_modules(sub_block, [["0", "1"]], inplace=True)
+            #torch.quantization.fuse_modules(
+            #    basic_block, [["conv1", "bn1", "relu"], ["conv2", "bn2"]], inplace=True
+            #)
+            if basic_block.shortcut is not None:
+                torch.quantization.fuse_modules(basic_block.shortcut, [["0", "1"]], inplace=True)
 
 # Print FP32 model.
 print("FP32", model)

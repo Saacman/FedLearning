@@ -18,13 +18,13 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.autograd import Variable
 import torch.nn.functional as F
-
+import torchvision.datasets as datasets
 import torch
 import torch.nn as nn
-
+from torch.utils.data import DataLoader
 
 #from resnet_cifar import *
-from utils2 import *
+#from utils2 import *
 
 import src.utils as u
 from src.models import ResNet
@@ -163,9 +163,19 @@ def quantize_bw(kernel : torch.Tensor):
 net=resnet20().cuda()
 if __name__ == '__main__':
     use_cuda = torch.cuda.is_available
+    device = torch.device("cuda" if use_cuda else "cpu")
+
+    # Hyper-parameters
+    quantize_nbits = 4
+    num_epochs = 200
+    batch_size_test = 100
+    batch_size_train = 128
+    learning_rate = 0.001
+    #stats = (0.5, 0.5, 0.5), (0.5, 0.5, 0.5)
+    stats = ((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    #stats = ((0.507, 0.487, 0.441), (0.267, 0.256, 0.276))
     global best_acc
     best_acc = 0
-    start_epoch = 0
     best_count = 0
     #--------------------------------------------------------------------------
     # Load Cifar data
@@ -177,44 +187,32 @@ if __name__ == '__main__':
     #normalize = transforms.Normalize(mean=[0.507, 0.487, 0.441], std=[0.267, 0.256, 0.276])
     
     
-    train_set = torchvision.datasets.CIFAR10(
-        root=root,
-        train=True,
-        download=download,
-        transform=transforms.Compose([
-            transforms.RandomCrop(32, padding=4),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            #normalize,
-        ]))
+    # Data augmentation and normalization for training
+    transform_train = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(*stats)
+    ])
+
+    # Normalization for testing
+    transform_test = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(*stats)
+    ])
+
+    # CIFAR-10 dataset
+    train_dataset = datasets.CIFAR10(root='./data', train=True, transform=transform_train, download=True)
+    test_dataset = datasets.CIFAR10(root='./data', train=False, transform=transform_test)
     
-    test_set = torchvision.datasets.CIFAR10(
-        root=root,
-        train=False,
-        download=download,
-        transform=transforms.Compose([
-            transforms.ToTensor(),
-            #normalize,
-        ]))
-    
-    
-    kwargs = {'num_workers':1, 'pin_memory':True}
-    batchsize_test = int(len(test_set)/40 )#100
-    print('Batch size of the test set: ', batchsize_test)
-    test_loader = torch.utils.data.DataLoader(dataset=test_set,
-                                              batch_size=batchsize_test,
-                                              shuffle=False, **kwargs
-                                             )
-    batchsize_train = 128
-    print('Batch size of the train set: ', batchsize_train)
-    train_loader = torch.utils.data.DataLoader(dataset=train_set,
-                                               batch_size=batchsize_train,
-                                               shuffle=True, **kwargs
-                                              )
+    batch_size_test = int(len(test_dataset)/40 )#100
+    # Data loaders
+    train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size_train, shuffle=True)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size_test, shuffle=False)
+    #--------------------------------------------------------------------------
     
     net, criterion, optimizer = get_model2(net, learning_rate=0.1, weight_decay=5e-4)
-    #all_G_kernels=ckpt['G_kernels']
-    #m=ckpt['epoch']
+
     
     all_G_kernels = [
         Variable(kernel.data.clone(), requires_grad=True)
@@ -230,8 +228,8 @@ if __name__ == '__main__':
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80,120,160], gamma=0.1)
 
     
-    nepoch = 200
-    for epoch in tqdm(range(nepoch)): # xrange(nepoch)
+    num_epochs = 200
+    for epoch in tqdm(range(num_epochs)): # xrange(nepoch)
         print('Epoch ID', epoch)
         #----------------------------------------------------------------------
         # Training
@@ -257,10 +255,10 @@ if __name__ == '__main__':
                 ######Binary Relax##########################
                 if epoch<120:
                     #k_G.data = (eta*quantize_bw(V)+V)/(1+eta)
-                    k_G.data = (eta*quantize(V)+V)/(1+eta)
+                    k_G.data = (eta*quantize(V,num_bits=quantize_nbits)+V)/(1+eta)
                     
                 else:
-                    k_G.data = quantize(V)
+                    k_G.data = quantize(V, num_bits=quantize_nbits)
                 #############################################
                 
                 k_W.data, k_G.data = k_G.data, k_W.data
@@ -308,7 +306,7 @@ if __name__ == '__main__':
                 correct += predicted.eq(target.data).cpu().sum()
                 #progress_bar(batch_idx, len(test_loader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                 #% (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
-                print(f"{batch_idx} {len(train_loader)} Loss: {train_loss/(batch_idx+1):.3f} | Acc: {100.*correct/total:.3f}% ({correct}/{total})")
+                #print(f"{batch_idx} {len(train_loader)} Loss: {train_loss/(batch_idx+1):.3f} | Acc: {100.*correct/total:.3f}% ({correct}/{total})")
 
         
         #----------------------------------------------------------------------
@@ -330,7 +328,7 @@ if __name__ == '__main__':
                 'epoch': epoch,
             }
             
-            torch.save(state, './resnet20.pth')
+            torch.save(state, f'./resnet_{quantize_bw}bits.pth')
             #net.save_state_dict('resnet20.pt')
             best_acc = acc
             best_count = correct
