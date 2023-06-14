@@ -12,9 +12,7 @@ The basic ResNet architecture is from https://github.com/akamaster/pytorch_resne
 main pgd enresnet
 """
 
-import torch.backends.cudnn as cudnn
 import torch.optim as optim
-import torchvision
 import torchvision.transforms as transforms
 from torch.autograd import Variable
 import torch.nn.functional as F
@@ -23,12 +21,10 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-#from resnet_cifar import *
-#from utils2 import *
 
 import src.utils as u
 from src.models import ResNet
-from src.quantize import quantize, quantize_grad, QConv2d, QLinear, RangeBN
+from src.quantize import quantize
 from tqdm import tqdm
 
 def _weights_init(m):
@@ -228,7 +224,7 @@ if __name__ == '__main__':
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80,120,160], gamma=0.1)
 
     
-    num_epochs = 200
+
     for epoch in tqdm(range(num_epochs)): # xrange(nepoch)
         print('Epoch ID', epoch)
         #----------------------------------------------------------------------
@@ -328,7 +324,7 @@ if __name__ == '__main__':
                 'epoch': epoch,
             }
             
-            torch.save(state, f'./resnet_{quantize_bw}bits.pth')
+            torch.save(state, f'./resnet_{quantize_nbits}bits.pth')
             #net.save_state_dict('resnet20.pt')
             best_acc = acc
             best_count = correct
