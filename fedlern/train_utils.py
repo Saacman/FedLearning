@@ -12,7 +12,7 @@ import time
 
 import numpy as np
 
-from fedlern.models.resnet18 import ResNet
+
 
 def set_random_seeds(random_seed=0):
 
@@ -193,10 +193,10 @@ def load_torchscript_model(model_filepath, device):
 
     return model
 
-def create_model(num_classes=10):
+# def create_model(num_classes=10):
 
-    model = ResNet(in_channels=16, num_classes=num_classes)
-    return model
+#     model = ResNet(in_channels=16, num_classes=num_classes)
+#     return model
 
 class QuantizedResNet(nn.Module):
     def __init__(self, model_fp32):
