@@ -193,49 +193,7 @@ def load_torchscript_model(model_filepath, device):
 
     return model
 
-# def create_model(num_classes=10):
 
-#     model = ResNet(in_channels=16, num_classes=num_classes)
-#     return model
-
-class QuantizedResNet(nn.Module):
-    def __init__(self, model_fp32):
-        super(QuantizedResNet, self).__init__()
-        # QuantStub converts tensors from floating point to quantized.
-        # This will only be used for inputs.
-        self.quant = torch.quantization.QuantStub()
-        # DeQuantStub converts tensors from quantized to floating point.
-        # This will only be used for outputs.
-        self.dequant = torch.quantization.DeQuantStub()
-        # FP32 model
-        self.model_fp32 = model_fp32
-
-    def forward(self, x):
-        # manually specify where tensors will be converted from floating
-        # point to quantized in the quantized model
-        x = self.quant(x)
-        x = self.model_fp32(x)
-        # manually specify where tensors will be converted from quantized
-        # to floating point in the quantized model
-        x = self.dequant(x)
-        return x
-
-def model_equivalence(model_1, model_2, device, rtol=1e-05, atol=1e-08, num_tests=100, input_size=(1,3,32,32)):
-
-    model_1.to(device)
-    model_2.to(device)
-
-    for _ in range(num_tests):
-        x = torch.rand(size=input_size).to(device)
-        y1 = model_1(x).detach().cpu().numpy()
-        y2 = model_2(x).detach().cpu().numpy()
-        if np.allclose(a=y1, b=y2, rtol=rtol, atol=atol, equal_nan=False) == False:
-            print("Model equivalence test sample failed: ")
-            print(y1)
-            print(y2)
-            return False
-
-    return True
 
 def print_model_size(mdl):
     torch.save(mdl.state_dict(), "tmp.pt")
