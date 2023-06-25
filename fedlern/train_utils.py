@@ -55,42 +55,41 @@ def evaluate_model(model, test_loader, device, criterion=None):
 
     running_loss = 0
     running_corrects = 0
+    with torch.no_grad():
+        for inputs, labels in test_loader:
 
-    for inputs, labels in test_loader:
+            inputs = inputs.to(device)
+            labels = labels.to(device)
 
-        inputs = inputs.to(device)
-        labels = labels.to(device)
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
 
-        outputs = model(inputs)
-        _, preds = torch.max(outputs, 1)
+            if criterion is not None:
+                loss = criterion(outputs, labels).item()
+            else:
+                loss = 0
 
-        if criterion is not None:
-            loss = criterion(outputs, labels).item()
-        else:
-            loss = 0
-
-        # statistics
-        running_loss += loss * inputs.size(0)
-        running_corrects += torch.sum(preds == labels.data)
+            # statistics
+            running_loss += loss * inputs.size(0)
+            running_corrects += torch.sum(preds == labels.data)
 
     eval_loss = running_loss / len(test_loader.dataset)
     eval_accuracy = running_corrects / len(test_loader.dataset)
 
     return eval_loss, eval_accuracy
 
-def train_model(model, train_loader, test_loader, device):
+def train_model(model, train_loader, test_loader, device, criterion = None, optimizer = None, num_epochs=20, learning_rate=1e-2, momentum=0.9, weight_decay=1e-5):
 
     # The training configurations were not carefully selected.
-    learning_rate = 1e-2
-    num_epochs = 20
+    if criterion is None:
+        criterion = nn.CrossEntropyLoss()
+    if optimizer is None:
+        # It seems that SGD optimizer is better than Adam optimizer for ResNet18 training on CIFAR10.
+        optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
 
-    criterion = nn.CrossEntropyLoss()
+
 
     model.to(device)
-
-    # It seems that SGD optimizer is better than Adam optimizer for ResNet18 training on CIFAR10.
-    optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9, weight_decay=1e-5)
-    # optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
 
     for epoch in range(num_epochs):
 
@@ -126,7 +125,7 @@ def train_model(model, train_loader, test_loader, device):
         model.eval()
         eval_loss, eval_accuracy = evaluate_model(model=model, test_loader=test_loader, device=device, criterion=criterion)
 
-        print("Epoch: {:02d} Train Loss: {:.3f} Train Acc: {:.3f} Eval Loss: {:.3f} Eval Acc: {:.3f}".format(epoch, train_loss, train_accuracy, eval_loss, eval_accuracy))
+        print(f"Epoch: {epoch}/{num_epochs} Train Loss: {train_loss:.3f} Train Acc: {train_accuracy:.3f} Eval Loss: {eval_loss:.3f} Eval Acc: {eval_accuracy:.3f}")
 
     return model
 

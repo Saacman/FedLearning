@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-
+from fedlern.quantize import *
 
 # def create_model(num_classes=10):
 
@@ -48,7 +48,7 @@ def model_equivalence(model_1, model_2, device, rtol=1e-05, atol=1e-08, num_test
 
     return True
 
-def get_model2(model, learning_rate=1e-3, weight_decay=1e-4):
+def get_model_optimizer(model, learning_rate=1e-3, weight_decay=1e-4):
 
     # set the first layer not trainable
     # model.features.conv0.weight.requires_grad = False
@@ -78,9 +78,9 @@ def get_model2(model, learning_rate=1e-3, weight_decay=1e-4):
     ]
     optimizer = optim.SGD(params, lr=learning_rate, momentum=0.9)
 
-    loss = nn.CrossEntropyLoss().cuda()
-    model = model.cuda()  # move the model to gpu
-    return model, loss, optimizer
+    #loss = nn.CrossEntropyLoss().cuda()
+    #model = model.cuda()  # move the model to gpu
+    return optimizer
 
 def quantize_bw(kernel : torch.Tensor):
     """
@@ -91,3 +91,80 @@ def quantize_bw(kernel : torch.Tensor):
     sign = kernel.sign().float()
 
     return sign*delta
+
+
+def qtrain_model(model : torch.nn.Module,
+                 train_loader: torch.utils.data.DataLoader,
+                 device, criterion = None, optimizer = None, scheduler = None,
+                 num_epochs=20, learning_rate=1e-2, momentum=0.9, weight_decay=1e-5,
+                 bits = 8, eta = 1):
+    if criterion is None:
+        criterion = nn.CrossEntropyLoss()
+    if optimizer is None:
+        optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
+    if scheduler is None:
+        scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80, 120, 160], gamma=0.1)
+
+    # Copy the parameters
+    all_G_kernels = [kernel.data.clone().requires_grad_(True)
+                    for kernel in optimizer.param_groups[1]['params']]
+    
+    # Handle of the optimizer parameters
+    all_W_kernels = optimizer.param_groups[1]['params']
+    kernels = [{'params': all_G_kernels}]
+    # New optimizer for the quantized weights
+    optimizer_quant = optim.SGD(kernels, lr=0)
+
+    # Training
+    model.to(device)
+    model.train()
+    for epoch in range(num_epochs):
+
+
+        running_loss = 0
+        running_corrects = 0
+
+        for inputs, labels in train_loader:
+
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # quantize the weights
+            all_W_kernels = optimizer.param_groups[1]['params']
+            all_G_kernels = optimizer_quant.param_groups[0]['params']
+
+            for k_W, k_G in zip(all_W_kernels, all_G_kernels):
+                V = k_W.data
+                
+                if epoch < 120:
+                    k_G.data = (eta * quantize(V, num_bits=bits) + V) / (1 + eta)
+                else:
+                    k_G.data = quantize(V, num_bits=bits)
+                
+                k_W.data, k_G.data = k_G.data, k_W.data
+
+            # forward + backward + optimize
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+
+            for k_W, k_G in zip(all_W_kernels, all_G_kernels):
+                k_W.data, k_G.data = k_G.data, k_W.data
+
+            _, preds = torch.max(outputs, 1)
+            optimizer.step()
+            scheduler.step()
+            # statistics
+            running_loss += loss.item() * inputs.size(0)
+            running_corrects += torch.sum(preds == labels.data)
+
+        train_loss = running_loss / len(train_loader.dataset)
+        train_accuracy = running_corrects / len(train_loader.dataset)
+
+        print(f"Epoch: {epoch}/{num_epochs} Train Loss: {train_loss:.3f} Train Acc: {train_accuracy:.3f}")
+
+    #return model
+    return train_loss, train_accuracy
