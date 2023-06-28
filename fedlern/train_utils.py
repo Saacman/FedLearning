@@ -78,15 +78,16 @@ def evaluate_model(model, test_loader, device, criterion=None):
 
     return eval_loss, eval_accuracy
 
-def train_model(model, train_loader, test_loader, device, criterion = None, optimizer = None, num_epochs=20, learning_rate=1e-2, momentum=0.9, weight_decay=1e-5):
+def train_model(model, train_loader, device, test_loader = None, criterion = None, optimizer = None, num_epochs=20):
 
     # The training configurations were not carefully selected.
     if criterion is None:
-        criterion = nn.CrossEntropyLoss()
+        #criterion = nn.CrossEntropyLoss()
+        return None
     if optimizer is None:
         # It seems that SGD optimizer is better than Adam optimizer for ResNet18 training on CIFAR10.
-        optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
-
+        #optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
+        return None
 
 
     model.to(device)
@@ -122,12 +123,15 @@ def train_model(model, train_loader, test_loader, device, criterion = None, opti
         train_accuracy = running_corrects / len(train_loader.dataset)
 
         # Evaluation
-        model.eval()
-        eval_loss, eval_accuracy = evaluate_model(model=model, test_loader=test_loader, device=device, criterion=criterion)
+        if not(test_loader is None):
+            model.eval()
+            eval_loss, eval_accuracy = evaluate_model(model=model, test_loader=test_loader, device=device, criterion=criterion)
 
-        print(f"Epoch: {epoch}/{num_epochs} Train Loss: {train_loss:.3f} Train Acc: {train_accuracy:.3f} Eval Loss: {eval_loss:.3f} Eval Acc: {eval_accuracy:.3f}")
-
-    return model
+        #print(f"Epoch: {epoch}/{num_epochs} Train Loss: {train_loss:.3f} Train Acc: {train_accuracy:.3f} Eval Loss: {eval_loss:.3f} Eval Acc: {eval_accuracy:.3f}")
+    if not(test_loader is None):
+        return train_loss, train_accuracy, eval_loss, eval_accuracy
+    else:
+        return train_loss, train_accuracy
 
 def calibrate_model(model, loader, device=torch.device("cpu:0")):
 
