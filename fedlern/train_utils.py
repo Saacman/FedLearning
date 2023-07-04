@@ -78,17 +78,20 @@ def evaluate_model(model, test_loader, device, criterion=None):
 
     return eval_loss, eval_accuracy
 
-def train_model(model, train_loader, device, test_loader = None, criterion = None, optimizer = None, num_epochs=20):
+def train_model(model, train_loader, device, test_loader = None, criterion = None, optimizer = None, num_epochs=200, learning_rate=0.1, momentum=0.9, weight_decay=1e-4):
 
     # The training configurations were not carefully selected.
     if criterion is None:
-        #criterion = nn.CrossEntropyLoss()
-        return None
+        criterion = nn.CrossEntropyLoss()
+        #return None
     if optimizer is None:
         # It seems that SGD optimizer is better than Adam optimizer for ResNet18 training on CIFAR10.
-        #optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
-        return None
-
+        optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
+        #return None
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
+                                                     milestones=[100, 150],
+                                                     gamma=0.1,
+                                                     last_epoch=-1)
 
     model.to(device)
 
@@ -126,7 +129,7 @@ def train_model(model, train_loader, device, test_loader = None, criterion = Non
         if not(test_loader is None):
             model.eval()
             eval_loss, eval_accuracy = evaluate_model(model=model, test_loader=test_loader, device=device, criterion=criterion)
-
+        scheduler.step()
         #print(f"Epoch: {epoch}/{num_epochs} Train Loss: {train_loss:.3f} Train Acc: {train_accuracy:.3f} Eval Loss: {eval_loss:.3f} Eval Acc: {eval_accuracy:.3f}")
     if not(test_loader is None):
         return train_loss, train_accuracy, eval_loss, eval_accuracy
