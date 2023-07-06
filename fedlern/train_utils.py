@@ -130,7 +130,7 @@ def train_model(model, train_loader, device, test_loader = None, criterion = Non
             model.eval()
             eval_loss, eval_accuracy = evaluate_model(model=model, test_loader=test_loader, device=device, criterion=criterion)
         scheduler.step()
-        #print(f"Epoch: {epoch}/{num_epochs} Train Loss: {train_loss:.3f} Train Acc: {train_accuracy:.3f} Eval Loss: {eval_loss:.3f} Eval Acc: {eval_accuracy:.3f}")
+        print(f"Epoch: {epoch}/{num_epochs} Train Loss: {train_loss:.3f} Train Acc: {train_accuracy:.3f} Eval Loss: {eval_loss:.3f} Eval Acc: {eval_accuracy:.3f}")
     if not(test_loader is None):
         return train_loss, train_accuracy, eval_loss, eval_accuracy
     else:
