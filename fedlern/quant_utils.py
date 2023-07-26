@@ -138,14 +138,15 @@ def qtrain_model(model : torch.nn.Module,
 
             for k_W, k_G in zip(all_W_kernels, all_G_kernels):
                 V = k_W.data
+                # TODO : remove if, just apply else
+                # if epoch < 120:
+                #     k_G.data = (eta * quantize(V, num_bits=bits) + V) / (1 + eta)
+                # else:
+                #     k_G.data = quantize(V, num_bits=bits)
                 
-                if epoch < 120:
-                    k_G.data = (eta * quantize(V, num_bits=bits) + V) / (1 + eta)
-                else:
-                    k_G.data = quantize(V, num_bits=bits)
-                
-                k_W.data, k_G.data = k_G.data, k_W.data
-
+                # k_W.data, k_G.data = k_G.data, k_W.data
+                # -- Apply quantization
+                k_G.data = quantize(V, num_bits=bits)
             # forward + backward + optimize
             outputs = model(inputs)
             loss = criterion(outputs, labels)
@@ -156,7 +157,7 @@ def qtrain_model(model : torch.nn.Module,
 
             _, preds = torch.max(outputs, 1)
             optimizer.step()
-            scheduler.step()
+            #scheduler.step()
             # statistics
             running_loss += loss.item() * inputs.size(0)
             running_corrects += torch.sum(preds == labels.data)
