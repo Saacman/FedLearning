@@ -95,9 +95,10 @@ def quantize_bw(kernel : torch.Tensor):
 
 def qtrain_model(model : torch.nn.Module,
                  train_loader: torch.utils.data.DataLoader,
-                 device, criterion = None, optimizer = None, scheduler = None,
+                 device, criterion = None, optimizer = None, optimizer_quant = None, scheduler = None,
                  num_epochs=20, learning_rate=1e-2, momentum=0.9, weight_decay=1e-5,
                  bits = 8, eta = 1):
+    
     if criterion is None:
         criterion = nn.CrossEntropyLoss()
     if optimizer is None:
@@ -111,9 +112,10 @@ def qtrain_model(model : torch.nn.Module,
     
     # Handle of the optimizer parameters
     all_W_kernels = optimizer.param_groups[1]['params']
-    kernels = [{'params': all_G_kernels}]
-    # New optimizer for the quantized weights
-    optimizer_quant = optim.SGD(kernels, lr=0)
+    # kernels = [{'params': all_G_kernels}]
+
+    # # New optimizer for the quantized weights
+    # optimizer_quant = optim.SGD(kernels, lr=0)
 
     # Training
     model.to(device)
@@ -132,33 +134,34 @@ def qtrain_model(model : torch.nn.Module,
             # zero the parameter gradients
             optimizer.zero_grad()
 
-            # quantize the weights
+            # Get a handle of the parameters
             all_W_kernels = optimizer.param_groups[1]['params']
             all_G_kernels = optimizer_quant.param_groups[0]['params']
 
             for k_W, k_G in zip(all_W_kernels, all_G_kernels):
-                V = k_W.data
-                # TODO : remove if, just apply else
-                # if epoch < 120:
-                #     k_G.data = (eta * quantize(V, num_bits=bits) + V) / (1 + eta)
-                # else:
-                #     k_G.data = quantize(V, num_bits=bits)
-                
-                # k_W.data, k_G.data = k_G.data, k_W.data
+                V = k_W.data                
                 # -- Apply quantization
                 k_G.data = quantize(V, num_bits=bits)
-            # forward + backward + optimize
+
+                # -- Switch the weights
+                k_W.data, k_G.data = k_G.data, k_W.data
+
+            # forward + backward
             outputs = model(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
 
+            # -- Switch the weights back
             for k_W, k_G in zip(all_W_kernels, all_G_kernels):
                 k_W.data, k_G.data = k_G.data, k_W.data
 
+
             _, preds = torch.max(outputs, 1)
+            # -- Step the optimizer
             optimizer.step()
             #scheduler.step()
-            # statistics
+
+            # -- statistics
             running_loss += loss.item() * inputs.size(0)
             running_corrects += torch.sum(preds == labels.data)
 
