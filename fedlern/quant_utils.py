@@ -3,7 +3,8 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 from fedlern.quantize import *
-
+import matplotlib.pyplot as plt
+from fedlern.train_utils import *
 # def create_model(num_classes=10):
 
 #     model = ResNet(in_channels=16, num_classes=num_classes)
@@ -127,7 +128,7 @@ def qtrain_model(model : torch.nn.Module,
         running_corrects = 0
 
         for inputs, labels in train_loader:
-
+            #before = histogram_conv1(model)
             inputs = inputs.to(device)
             labels = labels.to(device)
 
@@ -145,7 +146,7 @@ def qtrain_model(model : torch.nn.Module,
 
                 # -- Switch the weights
                 k_W.data, k_G.data = k_G.data, k_W.data
-
+            #after = histogram_conv1(model)
             # forward + backward
             outputs = model(inputs)
             loss = criterion(outputs, labels)
@@ -171,4 +172,85 @@ def qtrain_model(model : torch.nn.Module,
         print(f"Epoch: {epoch}/{num_epochs} Train Loss: {train_loss:.3f} Train Acc: {train_accuracy:.3f}")
 
     #return model
-    return train_loss, train_accuracy
+    return train_loss, train_accuracy#, before, after
+
+
+def to_quantized_model_decorator(optimizer, optimizer_quant):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            # -- Get a handle of the parameters
+            all_W_kernels = optimizer.param_groups[1]['params']
+            all_G_kernels = optimizer_quant.param_groups[0]['params']
+            # -- Switch the weights
+            for k_W, k_G in zip(all_W_kernels, all_G_kernels):
+                k_W.data, k_G.data = k_G.data, k_W.data
+
+            # Call the original function
+            result = func(*args, **kwargs)
+
+            # Code block after the function's code execution
+            # -- Switch the weights back
+            for k_W, k_G in zip(all_W_kernels, all_G_kernels):
+                k_W.data, k_G.data = k_G.data, k_W.data
+            return result
+
+        return wrapper
+    return decorator
+
+def server_aggregate(global_model : torch.nn.Module, client_models: list):
+    """
+    The means of the weights of the client models are aggregated to the global model
+    """
+    global_dict = global_model.state_dict() # Get a copy of the global model state_dict
+    for key in global_dict.keys():
+        global_dict[key] = torch.stack([client_models[i].state_dict()[key].float() for i in range(len(client_models))],0).mean(0)
+    global_model.load_state_dict(global_dict)
+    
+    # Update the client models using the global model
+    for model in client_models:
+        model.load_state_dict(global_model.state_dict())
+
+def server_quantize(optimizer, optimizer_quant, bits=8):
+    # Get a handle of the parameters
+    all_W_kernels = optimizer.param_groups[1]['params']
+    all_G_kernels = optimizer_quant.param_groups[0]['params']
+    
+    for k_W, k_G in zip(all_W_kernels, all_G_kernels):
+        V = k_W.data                
+        # -- Apply quantization
+        #print("Before quantization---------------")
+        #print(k_W.data)
+        k_G.data = quantize(V, num_bits=bits)
+        #print("After quantization---------------")
+        #print(k_G.data)
+        # -- Switch the weights
+        k_W.data, k_G.data = k_G.data, k_W.data
+    
+    # -- Switch the weights back
+    for k_W, k_G in zip(all_W_kernels, all_G_kernels):
+        k_W.data, k_G.data = k_G.data, k_W.data
+
+
+def plot_histogram(hist, bin_edges, title='Histogram'):
+    plt.bar(bin_edges[:-1], hist, width=(bin_edges[1] - bin_edges[0]), align='edge')
+    plt.xlabel('Bins')
+    plt.ylabel('Frequency')
+    plt.title(title)
+    plt.show()
+
+def histogram_conv1(model : torch.nn.Module):
+    '''
+    Inspect a tensor from the model's state dictionary
+    '''
+    state_dict = model.state_dict()
+
+    # Choose the key corresponding to the element you want to print
+    # For example, let's say you want to print the weights of a specific layer 'conv1'
+    element_key = 'conv1.weight'
+
+    # Check if the key exists in the state dictionary
+    if element_key in state_dict:
+        element = state_dict[element_key]
+        return torch.histogram(element.to(torch.device('cpu')))
+    else:
+        print(f"The key '{element_key}' does not exist in the model's state dictionary.")
