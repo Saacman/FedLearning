@@ -178,6 +178,7 @@ def qtrain_model(model : torch.nn.Module,
 def to_quantized_model_decorator(optimizer, optimizer_quant):
     def decorator(func):
         def wrapper(*args, **kwargs):
+            #print("Wrapper used")
             # -- Get a handle of the parameters
             all_W_kernels = optimizer.param_groups[1]['params']
             all_G_kernels = optimizer_quant.param_groups[0]['params']
@@ -192,8 +193,8 @@ def to_quantized_model_decorator(optimizer, optimizer_quant):
             # -- Switch the weights back
             for k_W, k_G in zip(all_W_kernels, all_G_kernels):
                 k_W.data, k_G.data = k_G.data, k_W.data
+            #print("Exit wrapper")
             return result
-
         return wrapper
     return decorator
 
@@ -207,6 +208,10 @@ def server_aggregate(global_model : torch.nn.Module, client_models: list):
     global_model.load_state_dict(global_dict)
     
     # Update the client models using the global model
+    for model in client_models:
+        model.load_state_dict(global_model.state_dict())
+
+def server_update(global_model : torch.nn.Module, client_models: list):
     for model in client_models:
         model.load_state_dict(global_model.state_dict())
 
@@ -231,12 +236,16 @@ def server_quantize(optimizer, optimizer_quant, bits=8):
         k_W.data, k_G.data = k_G.data, k_W.data
 
 
-def plot_histogram(hist, bin_edges, title='Histogram'):
+def plot_histogram(hist, bin_edges, title='Histogram', save: bool = False, save_path: str = None):
     plt.bar(bin_edges[:-1], hist, width=(bin_edges[1] - bin_edges[0]), align='edge')
     plt.xlabel('Bins')
     plt.ylabel('Frequency')
     plt.title(title)
-    plt.show()
+    #plt.show()
+    if save:
+        plt.savefig(save_path)
+    else:
+        plt.show()
 
 def histogram_conv1(model : torch.nn.Module):
     '''
