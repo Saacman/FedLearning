@@ -133,3 +133,8 @@ data/
 .drawio.bkp
 .$arch.drawio.bkp
 .~lock.References.odt#
+.vscode/launch.json
+
+# Trained models
+*.pth
+*.pt
