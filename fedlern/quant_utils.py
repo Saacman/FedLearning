@@ -98,7 +98,7 @@ def qtrain_model(model : torch.nn.Module,
                  train_loader: torch.utils.data.DataLoader,
                  device, criterion = None, optimizer = None, optimizer_quant = None, scheduler = None,
                  num_epochs=20, learning_rate=1e-2, momentum=0.9, weight_decay=1e-5,
-                 bits = 8, eta = 1):
+                 bits = 8):
     
     if criterion is None:
         criterion = nn.CrossEntropyLoss()
@@ -139,10 +139,14 @@ def qtrain_model(model : torch.nn.Module,
             all_W_kernels = optimizer.param_groups[1]['params']
             all_G_kernels = optimizer_quant.param_groups[0]['params']
 
-            for k_W, k_G in zip(all_W_kernels, all_G_kernels):
+            for k_W, k_G, *nbit in zip(all_W_kernels, all_G_kernels, bits)\
+            if isinstance(bits,list) else zip(all_W_kernels, all_G_kernels):
                 V = k_W.data                
                 # -- Apply quantization
-                k_G.data = quantize(V, num_bits=bits)
+                if nbit:
+                    k_G.data = quantize(V, num_bits=nbit[0])
+                else:
+                    k_G.data = quantize(V, num_bits=bits)
 
                 # -- Switch the weights
                 k_W.data, k_G.data = k_G.data, k_W.data
@@ -220,15 +224,14 @@ def server_quantize(optimizer, optimizer_quant, bits=8):
     all_W_kernels = optimizer.param_groups[1]['params']
     all_G_kernels = optimizer_quant.param_groups[0]['params']
     
-    for k_W, k_G in zip(all_W_kernels, all_G_kernels):
+    for k_W, k_G, *nbit in zip(all_W_kernels, all_G_kernels, bits)\
+    if isinstance(bits,list) else zip(all_W_kernels, all_G_kernels):
+            
         V = k_W.data                
-        # -- Apply quantization
-        #print("Before quantization---------------")
-        #print(k_W.data)
-        k_G.data = quantize(V, num_bits=bits)
-        #print("After quantization---------------")
-        #print(k_G.data)
-        # -- Switch the weights
+        if nbit:
+            k_G.data = quantize(V, num_bits=nbit[0])
+        else:
+            k_G.data = quantize(V, num_bits=bits)
         k_W.data, k_G.data = k_G.data, k_W.data
     
     # -- Switch the weights back
