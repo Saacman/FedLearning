@@ -53,7 +53,7 @@ def get_model_optimizer(model, learning_rate=1e-3, weight_decay=1e-4):
 
     # set the first layer not trainable
     # model.features.conv0.weight.requires_grad = False
-
+    # Name , parameter
     # all fc layers
     weights = [
         p for n, p in model.named_parameters()
@@ -65,6 +65,7 @@ def get_model_optimizer(model, learning_rate=1e-3, weight_decay=1e-4):
         p for n, p in model.named_parameters()
         # if 'conv' in n and 'conv0' not in n
         if 'conv' in n and 'weight' in n
+        # if isinstance
     ]
 
     biases = [
