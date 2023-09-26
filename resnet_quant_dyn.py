@@ -28,9 +28,9 @@ import argparse
 parser = argparse.ArgumentParser(description="Run FedLern+Quantization")
 parser.add_argument("arg1", type=int, help="Head Size")
 parser.add_argument("arg2", type=int, help="Tail Size.")
-parser.add_argument("arg3", type=float, help="Bits Head")
-parser.add_argument("arg4", type=float, help="Bits Body")
-parser.add_argument("arg5", type=float, help="Bits Tail.")
+parser.add_argument("arg3", type=int, help="Bits Head")
+parser.add_argument("arg4", type=int, help="Bits Body")
+parser.add_argument("arg5", type=int, help="Bits Tail.")
 
 args = parser.parse_args()
 
@@ -215,7 +215,7 @@ for round in tqdm(range(rounds)):
     for client in selected_clients:
         # Individual criterion and optimizer
         print(f"Client {client} training")
-        train_loss, train_acc = train_dyn_quant(model = client_models[client],
+        train_loss, train_acc = qtrain_model(model = client_models[client],
                                              train_loader = train_loaders[client],
                                              device = device,
                                              criterion = criterion,
@@ -229,7 +229,7 @@ for round in tqdm(range(rounds)):
 
     # Aggregate in 3 steps
     server_aggregate(global_model, client_models)
-    server_dyn_quantize(global_optimizer, goptimizer_quant, quantize_bits)
+    server_quantize(global_optimizer, goptimizer_quant, quantize_bits)
     server_update_quant(global_model, client_models)
 
 
@@ -278,6 +278,7 @@ plt.xlabel('Epoch')
 plt.ylabel('Loss')
 #plt.show()
 plt.savefig(f'./plots/training_loss_{quantize_bits}.png')
+plt.close()
 
 # In[ ]:
 
@@ -299,6 +300,7 @@ plt.ylabel('Accuracy')
 plt.legend()
 #plt.show()
 plt.savefig(f'./plots/training_testing_{quantize_bits}.png')
+plt.close()
 
 
 # In[ ]:
