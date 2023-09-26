@@ -215,8 +215,8 @@ def main(id: int, bits: int):
     plt.title('Training Loss')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
-    #plt.show()
     plt.savefig(f"./plots/training_loss_{id}_{quantize_bits}_bits.png")
+    plt.show()
 
 
     train_accs = [d.item() for d in train_accs]
@@ -232,8 +232,8 @@ def main(id: int, bits: int):
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.legend()
-    #plt.show()
     plt.savefig(f"./plots/accuracy_{id}_{quantize_bits}_bits.png")
+    plt.show()
 
 
     # Test quantized model
@@ -249,7 +249,7 @@ def main(id: int, bits: int):
     gpu_inference_latency = measure_inference_latency(model=global_model, device=cuda_device, input_size=(1,3,32,32), num_samples=100)
     print("CPU Inference Latency: {:.2f} ms / sample".format(cpu_inference_latency * 1000))
     print("CUDA Inference Latency: {:.2f} ms / sample".format(gpu_inference_latency * 1000))
-
+    plt.close('all')
 
 
     with open(csv_file_path, mode='a', newline='') as csv_file:
