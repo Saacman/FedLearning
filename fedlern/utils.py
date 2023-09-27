@@ -98,6 +98,9 @@ def is_prime(n: int):
 
 
 def generate_large_prime(bits: int):
+    """
+    Generate a large prime
+    """
     # Generate a random odd number of the given size
     p = random.getrandbits(bits)
     if p % 2 == 0:
@@ -125,7 +128,7 @@ def primes_list(n: int):
 
 def send_pckld_bytes(sockt, msg):
     """
-    Function to send & unload pickle bytes
+    Function to send pickle bytes
     """
     # Dump the msg to pickle bytes
     msg_bytes = pickle.dumps(msg)
